@@ -136,7 +136,9 @@
     (String.slice &(apply-edits table) offset len))
 
   (doc move
-    "Moves a portion of a piece table string to another position.")
+    "Moves a portion of a piece table string to another position."
+    "Passing a desitination value of -1 will move the segment to the beginning
+    of the string.")
   (defn move [from len to table]
     (let [string (get-span from (+ from len) table)]
     (do (remove len (+ from len) table)

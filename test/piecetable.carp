@@ -49,6 +49,31 @@
     (PieceTable.insert @"foo" 0 &table)
     (PieceTable.apply-edits &table)))
 
+(defn test-move []
+  (let-do [table (PieceTable.new @"test-string")]
+    (PieceTable.move 0 4 10 &table)
+    (PieceTable.apply-edits &table)))
+
+(defn test-move-backward []
+  (let-do [table (PieceTable.new @"test-string")]
+    (PieceTable.move 5 6 -1 &table)
+    (PieceTable.apply-edits &table)))
+
+(defn test-sub []
+  (let-do [table (PieceTable.new @"test-string")]
+    (PieceTable.substitute 0 4 @"foo" &table)
+    (PieceTable.apply-edits &table)))
+
+(defn test-sub-end []
+  (let-do [table (PieceTable.new @"test-string")]
+    (PieceTable.substitute 5 6 @"foo" &table)
+    (PieceTable.apply-edits &table)))
+
+(defn test-sub-mid []
+  (let-do [table (PieceTable.new @"test-string")]
+    (PieceTable.substitute 4 1 @"*" &table)
+    (PieceTable.apply-edits &table)))
+
 (deftest test
   ;; initialization
   (assert-equal test
@@ -102,4 +127,24 @@
     "test-string"
     &(test-insert-remove)
     "Piece tables perform insertions followed by removals correctly.")
+  (assert-equal test
+    "-stringtest"
+    &(test-move)
+    "Piece tables perform forward moves correctly.")
+  (assert-equal test
+    "stringtest-"
+    &(test-move-backward)
+    "Piece tables perform backward moves correctly.")
+  (assert-equal test
+    "foo-string"
+    &(test-sub)
+    "Piece tables perform substitutions correctly.")
+  (assert-equal test
+    "test-foo"
+    &(test-sub-end)
+    "Piece tables perform substitutions correctly II.")
+  (assert-equal test
+    "test*string"
+    &(test-sub-mid)
+    "Piece tables perform substitutions correctly III.")
 )

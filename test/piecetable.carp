@@ -7,23 +7,23 @@
 
 (defn test-insert []
   (let-do [table (PieceTable.new @"test-string")]
-          (PieceTable.insert "foo" 3 &table)
+          (PieceTable.insert @"foo" 3 &table)
           (PieceTable.apply-edits &table)))
 
 (defn test-double-insert []
   (let-do [table (PieceTable.new @"test-string")]
-          (PieceTable.insert "foo" 3 &table)
-          (PieceTable.insert "bar" 6 &table)
+          (PieceTable.insert @"foo" 3 &table)
+          (PieceTable.insert @"bar" 6 &table)
           (PieceTable.apply-edits &table)))
 
 (defn test-prepend []
   (let-do [table (PieceTable.new @"test-string")]
-          (PieceTable.insert "foo" -1 &table)
+          (PieceTable.insert @"foo" -1 &table)
           (PieceTable.apply-edits &table)))
 
 (defn test-append []
   (let-do [table (PieceTable.new @"test-string")]
-          (PieceTable.insert "foo" 10 &table)
+          (PieceTable.insert @"foo" 10 &table)
           (PieceTable.apply-edits &table)))
 
 (defn test-remove []
@@ -39,14 +39,14 @@
 
 (defn test-insert-remove []
   (let-do [table (PieceTable.new @"test-string")]
-    (PieceTable.insert "foo" 3 &table)
+    (PieceTable.insert @"foo" 3 &table)
     (PieceTable.remove 3 7 &table)
     (PieceTable.apply-edits &table)))
 
 (defn test-remove-insert []
   (let-do [table (PieceTable.new @"test-string")]
     (PieceTable.remove 2 3 &table)
-    (PieceTable.insert "foo" 0 &table)
+    (PieceTable.insert @"foo" 0 &table)
     (PieceTable.apply-edits &table)))
 
 (deftest test

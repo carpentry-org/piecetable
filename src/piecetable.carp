@@ -5,7 +5,7 @@
 (defmodule PieceTable
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ; Initialization functions 
+  ; Initialization functions
 
   (doc new
     ("Initializes a new PieceTable using `original` as the original " false)
@@ -21,7 +21,7 @@
     (apply (IO.read-file filename) &PieceTable.new &id))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ; Internal piece management 
+  ; Internal piece management
 
   ;; get the nth piece in the table
   (hidden nth-piece)
@@ -60,10 +60,10 @@
   (doc insert
     ("Inserts a new string, `string`, into the peice table's original " false)
     "buffer at `offset`")
-  (sig insert (Fn [&String Int &PieceTable] ()))
+  (sig insert (Fn [String Int &PieceTable] ()))
   (defn insert [string offset table]
     (let [a-buffer (PieceTable.add table)
-          edit-len (String.length string)]
+          edit-len (String.length &string)]
       (match (lookup offset table)
         (Maybe.Nothing) ()
         (Maybe.Just trip)
@@ -80,9 +80,9 @@
                 rhp (Piece.init (+ offset 1) (- @p-len (+ offset 1)) @p-buff)
                 ap  (Piece.init a-len edit-len (BufferType.Add))]
             (if (>= (+ 1 offset) @p-len)
-              (do (PieceTable.set-add! table (String.concat &[@a-buffer @string]))
+              (do (PieceTable.set-add! table (String.concat &[@a-buffer string]))
                   (PieceTable.set-pieces! table (replace ix [@piece ap] table)))
-              (do (PieceTable.set-add! table (String.concat &[@a-buffer @string]))
+              (do (PieceTable.set-add! table (String.concat &[@a-buffer string]))
                   (PieceTable.set-pieces! table (replace ix [lhp ap rhp]
                   table))))))))
 
@@ -130,4 +130,22 @@
               (Array.push-back! &result (String.slice a-buffer start (+ start
               len))))))
       (String.concat &result)))
+
+  (sig get-span (Fn [Int Int &PieceTable] String))
+  (defn get-span [offset len table]
+    (String.slice &(apply-edits table) offset len))
+
+  (doc move
+    "Moves a portion of a piece table string to another position.")
+  (defn move [from len to table]
+    (let [string (get-span from len table)]
+    (do (remove len (+ from len) table)
+        (insert string (- to len) table))))
+
+  (doc substitute
+    "Replaces the portion of the string at `from` with `string`.")
+  (defn substitute [from len string table]
+    (let-do []
+            (remove len (+ from len) table)
+            (insert string from table)))
 )

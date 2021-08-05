@@ -138,9 +138,9 @@
   (doc move
     "Moves a portion of a piece table string to another position.")
   (defn move [from len to table]
-    (let [string (get-span from len table)]
+    (let [string (get-span from (+ from len) table)]
     (do (remove len (+ from len) table)
-        (insert string (- to len) table))))
+        (insert string (if (> to len) (- to len) to) table))))
 
   (doc substitute
     "Replaces the portion of the string at `from` with `string`.")

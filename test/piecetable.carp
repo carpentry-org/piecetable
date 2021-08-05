@@ -1,0 +1,105 @@
+(load "../src/piecetable.carp")
+(load "Test.carp")
+
+(use Test)
+
+(def test-table (PieceTable.new @"test-string"))
+
+(defn test-insert []
+  (let-do [table (PieceTable.new @"test-string")]
+          (PieceTable.insert "foo" 3 &table)
+          (PieceTable.apply-edits &table)))
+
+(defn test-double-insert []
+  (let-do [table (PieceTable.new @"test-string")]
+          (PieceTable.insert "foo" 3 &table)
+          (PieceTable.insert "bar" 6 &table)
+          (PieceTable.apply-edits &table)))
+
+(defn test-prepend []
+  (let-do [table (PieceTable.new @"test-string")]
+          (PieceTable.insert "foo" -1 &table)
+          (PieceTable.apply-edits &table)))
+
+(defn test-append []
+  (let-do [table (PieceTable.new @"test-string")]
+          (PieceTable.insert "foo" 10 &table)
+          (PieceTable.apply-edits &table)))
+
+(defn test-remove []
+  (let-do [table (PieceTable.new @"test-string")]
+      (PieceTable.remove 1 8 &table)
+      (PieceTable.apply-edits &table)))
+
+(defn test-remove-full-piece []
+  (let-do [table (PieceTable.new @"test-string")]
+    (PieceTable.remove 2 3 &table)
+    (PieceTable.remove 2 2 &table)
+    (PieceTable.apply-edits &table)))
+
+(defn test-insert-remove []
+  (let-do [table (PieceTable.new @"test-string")]
+    (PieceTable.insert "foo" 3 &table)
+    (PieceTable.remove 3 7 &table)
+    (PieceTable.apply-edits &table)))
+
+(defn test-remove-insert []
+  (let-do [table (PieceTable.new @"test-string")]
+    (PieceTable.remove 2 3 &table)
+    (PieceTable.insert "foo" 0 &table)
+    (PieceTable.apply-edits &table)))
+
+(deftest test
+  ;; initialization
+  (assert-equal test
+    ""
+    (PieceTable.add &test-table)
+    "Piece tables are initialized with an empty add buffer.")
+  (assert-equal test
+    "test-string"
+    (PieceTable.original &test-table)
+    "Piece tables are initialized with an immutable original buffer.")
+  (assert-equal test
+    11
+    @(Piece.len (PieceTable.nth-piece 0 &test-table))
+    "Piece tables are initialized with a single piece whose length is that of
+    the original buffer.")
+
+  ;; insertion
+  (assert-equal test
+    "testfoo-string"
+    &(test-insert)
+    "Piece tables apply insertions correctly.")
+  (assert-equal test
+    "testfoobar-string"
+    &(test-double-insert)
+    "Piece tables apply insertions on insertions correctly.")
+  (assert-equal test
+    "footest-string"
+    &(test-prepend)
+    "Piece tables prepend strings correctly.")
+  (assert-equal test
+    "test-stringfoo"
+    &(test-append)
+    "Piece tables append strings correctly.")
+
+  ;; removal
+  (assert-equal test
+    "test-sting"
+    &(test-remove)
+    "Piece tables apply deletions correctly.")
+  (assert-equal test
+    "-string"
+    &(test-remove-full-piece)
+    "Piece tables remove to the end of the string correctly.")
+
+  ;; insertion and removal
+  (assert-equal test
+    "tfoot-string"
+    &(test-remove-insert)
+    "Piece tables perform removals followed by insertions correctly.")
+  (assert-equal test
+    "test-string"
+    &(test-insert-remove)
+    "Piece tables perform insertions followed by removals correctly.")
+)

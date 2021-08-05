@@ -1,0 +1,133 @@
+(deftype BufferType Original Add)
+(deftype Piece [start Int len Int buffer BufferType])
+(deftype PieceTable [original String add String pieces (Array Piece)])
+
+(defmodule PieceTable
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ; Initialization functions 
+
+  (doc new
+    ("Initializes a new PieceTable using `original` as the original " false)
+    "string subject to editing.")
+  (defn new [original]
+    (let [pieces [(Piece.init 0 (length &original) (BufferType.Original))]]
+      (PieceTable.init original @"" pieces)))
+
+  (doc from-file
+    ("Initializes a new PieceTable using the contents of the " false)
+    " file `filename`")
+  (defn from-file [filename]
+    (apply (IO.read-file filename) &PieceTable.new &id))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ; Internal piece management 
+
+  ;; get the nth piece in the table
+  (hidden nth-piece)
+  (defn nth-piece [ix table]
+    (Array.unsafe-nth (PieceTable.pieces table) ix))
+
+  ;; Get the piece that contains offset relative to the original string.
+  ;; return the piece, its index and a corrected offset
+  (hidden lookup)
+  (sig lookup (Fn [Int &PieceTable] (Maybe (Triple Int Piece Int))))
+  (defn lookup [offset table]
+    (let [ps (PieceTable.pieces table)
+          result (Maybe.Nothing)
+          position offset]
+      (do (for [i 0 (Array.length ps)]
+            (let [p (Array.unsafe-nth ps i)]
+              (if (>= @(Piece.len p) position)
+                  (do (set! result (Maybe.Just (Triple i @p (+ position
+                  @(Piece.start p)))))
+                      (break))
+                  (set! position (- position @(Piece.len p))))))
+          result)))
+
+  ;; replace the piece at index with new pieces.
+  (hidden replace)
+  (sig replace (Fn [Int (Array Piece) &PieceTable] (Array Piece)))
+  (defn replace [ix new-pieces table]
+    (let [ps (PieceTable.pieces table)]
+      (Array.concat &[(Array.prefix ps ix)
+                      new-pieces
+                      (Array.suffix ps (+ ix 1))])))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ; Piece table operations
+
+  (doc insert
+    ("Inserts a new string, `string`, into the peice table's original " false)
+    "buffer at `offset`")
+  (sig insert (Fn [&String Int &PieceTable] ()))
+  (defn insert [string offset table]
+    (let [a-buffer (PieceTable.add table)
+          edit-len (String.length string)]
+      (match (lookup offset table)
+        (Maybe.Nothing) ()
+        (Maybe.Just trip)
+          (let [ix @(Triple.a &trip)
+                piece (Triple.b &trip)
+                actual-off (Triple.c &trip)
+                p-buff (Piece.buffer piece)
+                p-start (Piece.start piece)
+                p-len (Piece.len piece)
+                a-len (if (= (String.length a-buffer) 0) 0 (String.length
+                a-buffer))
+                ;; new pieces
+                lhp (Piece.init @p-start (+ offset 1) @p-buff)
+                rhp (Piece.init (+ offset 1) (- @p-len (+ offset 1)) @p-buff)
+                ap  (Piece.init a-len edit-len (BufferType.Add))]
+            (if (>= (+ 1 offset) @p-len)
+              (do (PieceTable.set-add! table (String.concat &[@a-buffer @string]))
+                  (PieceTable.set-pieces! table (replace ix [@piece ap] table)))
+              (do (PieceTable.set-add! table (String.concat &[@a-buffer @string]))
+                  (PieceTable.set-pieces! table (replace ix [lhp ap rhp]
+                  table))))))))
+
+  (defn remove [e-len offset table]
+    (match (lookup offset table)
+      (Maybe.Nothing) ()
+      (Maybe.Just triple)
+        (let [ix @(Triple.a &triple)
+              piece (Triple.b &triple)
+              actual-offset @(Triple.c &triple)
+              start @(Piece.start piece)
+              p-len @(Piece.len piece)
+              buff (Piece.buffer piece)
+              in-bounds (- actual-offset start)
+              rp (Piece.init actual-offset (- p-len in-bounds) @buff)]
+        (if (< in-bounds e-len)
+            (do (remove (- e-len in-bounds) in-bounds table)
+                (PieceTable.set-pieces! table (replace (+ ix 1) [rp] table)))
+            (let [lp (Piece.init start (- (- actual-offset e-len) start) @buff)]
+              (PieceTable.set-pieces! table (replace ix [lp rp] table)))))))
+  ;; TODO: Move up once carp-lang #1297 is fixed.
+  (doc remove
+    ("Removes a segment of length `e-len` from the original buffer " false)
+    ("starting at `offset` relative to the PieceTable's current " false)
+    "series of edits from the piece table.")
+  (sig remove (Fn [Int Int &PieceTable] ()))
+
+  (doc apply-edits
+    ("Applies the edits described by the PieceTable's peices to produce " false)
+    "a new string from its original buffer.")
+  (defn apply-edits [table]
+    (let-do [pieces (PieceTable.pieces table)
+             o-buffer (PieceTable.original table)
+             a-buffer (PieceTable.add table)
+             result []]
+      (for [i 0 (Array.length pieces)]
+        (let [piece (Array.unsafe-nth pieces i)
+              start @(Piece.start piece)
+              len   @(Piece.len piece)]
+          (match-ref (Piece.buffer piece)
+            (BufferType.Original)
+              (Array.push-back! &result (String.slice o-buffer start (+ start
+              len)))
+            (BufferType.Add)
+              (Array.push-back! &result (String.slice a-buffer start (+ start
+              len))))))
+      (String.concat &result)))
+)

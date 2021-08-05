@@ -99,7 +99,7 @@
               in-bounds (- actual-offset start)
               rp (Piece.init actual-offset (- p-len in-bounds) @buff)]
         (if (< in-bounds e-len)
-            (do (remove (- e-len in-bounds) in-bounds table)
+            (do (remove (- e-len in-bounds) (- e-len in-bounds) table)
                 (PieceTable.set-pieces! table (replace (+ ix 1) [rp] table)))
             (let [lp (Piece.init start (- (- actual-offset e-len) start) @buff)]
               (PieceTable.set-pieces! table (replace ix [lp rp] table)))))))
